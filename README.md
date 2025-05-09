@@ -97,4 +97,4 @@ The application is built using:
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+You like it, you use it.
