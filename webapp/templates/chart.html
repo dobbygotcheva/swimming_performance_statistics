@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Swimming Times Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Back Button -->
+            <div class="mb-4">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Selection
+                </a>
+            </div>
+
+            <!-- Title Card -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h1 class="card-title h3 mb-3">{{ title }}</h1>
+                    <p class="text-muted mb-0">Average Time: {{ average }}</p>
+                </div>
+            </div>
+
+            <!-- Statistics Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title h4 mb-4">Performance Statistics</h2>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h3 class="h6 text-muted mb-2">Best Time</h3>
+                                <p class="h4 mb-0">{{ data[0][0] if data else 'N/A' }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h3 class="h6 text-muted mb-2">Average Time</h3>
+                                <p class="h4 mb-0">{{ average }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h3 class="h6 text-muted mb-2">Latest Time</h3>
+                                <p class="h4 mb-0">{{ data[-1][0] if data else 'N/A' }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h3 class="h6 text-muted mb-2">Total Swims</h3>
+                                <p class="h4 mb-0">{{ data|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Card -->
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="swimChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('swimChart').getContext('2d');
+    const data = {{ data|tojson }};
+    const averageTime = {{ average_seconds|tojson }};
+    
+    // Calculate min and max times for better Y-axis scaling
+    const times = data.map(item => item[1]);
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+    const timeRange = maxTime - minTime;
+    
+    // Set Y-axis min and max with some padding
+    const yAxisMin = Math.floor(minTime - (timeRange * 0.1));
+    const yAxisMax = Math.ceil(maxTime + (timeRange * 0.1));
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map((_, index) => `Swim ${index + 1}`),
+            datasets: [{
+                label: 'Swim Times',
+                data: data.map(item => item[1]),
+                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                borderColor: 'rgba(52, 152, 219, 1)',
+                borderWidth: 1,
+                borderRadius: 5,
+                hoverBackgroundColor: 'rgba(52, 152, 219, 0.9)'
+            },
+            {
+                label: 'Average Time',
+                type: 'line',
+                data: Array(data.length).fill(averageTime),
+                borderColor: 'rgba(231, 76, 60, 0.8)',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return `Time: ${data[context.dataIndex][0]}`;
+                            } else {
+                                return 'Average Time';
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: yAxisMin,
+                    max: yAxisMax,
+                    title: {
+                        display: true,
+                        text: 'Time (seconds)',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            // Convert seconds back to time format
+                            const minutes = Math.floor(value / 60);
+                            const seconds = Math.floor(value % 60);
+                            const hundredths = Math.floor((value % 1) * 100);
+                            return minutes > 0 
+                                ? `${minutes}:${seconds.toString().padStart(2, '0')}.${hundredths.toString().padStart(2, '0')}`
+                                : `${seconds}.${hundredths.toString().padStart(2, '0')}`;
+                        },
+                        font: {
+                            size: 12
+                        },
+                        stepSize: timeRange > 10 ? 1 : 0.5
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)',
+                        drawBorder: true
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Swim Number',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

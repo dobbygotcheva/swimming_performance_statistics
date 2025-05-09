@@ -3,7 +3,7 @@ services:
     name: swimming-times-statistics
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn webapp.app:app
+    startCommand: cd /opt/render/project/src && gunicorn webapp.app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -12,4 +12,4 @@ services:
       - key: FLASK_APP
         value: webapp.app
       - key: PYTHONPATH
-        value: /opt/render/project/src
+        value: /opt/render/project/src 
